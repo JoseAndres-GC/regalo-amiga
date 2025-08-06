@@ -13,32 +13,86 @@ type Particle = {
   vx?: number;
   vy?: number;
   isRain?: boolean;
+  isFirework?: boolean;
 };
 
 export default function Home() {
   const [opened, setOpened] = useState(false);
-  const [showText, setShowText] = useState(false);
-  const [showEffects, setShowEffects] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
+  const [effectsOn, setEffectsOn] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const fireworkInterval = useRef<NodeJS.Timeout | null>(null);
+  const rainInterval = useRef<NodeJS.Timeout | null>(null);
 
   const handleGiftClick = () => {
     setOpened(true);
     setTimeout(() => {
-      setShowText(true);
-      setShowEffects(true);
+      setShowMessage(true);
     }, 1500);
   };
 
+  const toggleEffects = () => {
+    if (effectsOn) {
+      setEffectsOn(false);
+      particlesRef.current = [];
+      if (fireworkInterval.current) clearInterval(fireworkInterval.current);
+      if (rainInterval.current) clearInterval(rainInterval.current);
+    } else {
+      setEffectsOn(true);
+    }
+  };
+
   useEffect(() => {
-    if (!showEffects) return;
+    if (!opened) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particlesRef.current.forEach((p) => {
+        if (p.isRain) {
+          p.y += p.vy ?? 1;
+        } else if (p.vx !== undefined && p.vy !== undefined) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 0.01;
+        } else {
+          p.x += (p.tx - p.x) * 0.05;
+          p.y += (p.ty - p.y) * 0.05;
+          p.alpha = Math.min(p.alpha + 0.02, 1);
+        }
+
+        if (p.alpha > 0) {
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      particlesRef.current = particlesRef.current.filter((p) => p.alpha > 0);
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+  }, [opened]);
+
+  useEffect(() => {
+    if (!effectsOn) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
 
     const centerX = canvas.width / 2;
     const baseY = canvas.height / 2 + 150;
@@ -65,15 +119,13 @@ export default function Home() {
       }
     };
 
-    // Torta pastel tonos pastel suaves
-    addTier(0, 140, 35, "#f8cdda"); // rosado claro
-    addTier(1, 90, 30, "#f7aef8"); // lavanda claro
-    addTier(2, 50, 25, "#cdb4db"); // violeta pastel
+    addTier(0, 140, 35, "#f8cdda");
+    addTier(1, 90, 30, "#f7aef8");
+    addTier(2, 50, 25, "#cdb4db");
 
-    // Vela
     for (let j = 0; j < 30; j += 3) {
       particles.push({
-        x: centerX + (Math.random() - 0.5) * 100,
+        x: centerX + (Math.random() - 0.5) * 20,
         y: canvas.height + Math.random() * 100,
         tx: centerX,
         ty: baseY - 3 * (30 + 4) - j,
@@ -83,23 +135,23 @@ export default function Home() {
       });
     }
 
-    // Llama
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 50; i++) {
       particles.push({
-        x: centerX + (Math.random() - 0.5) * 100,
+        x: centerX + (Math.random() - 0.5) * 30,
         y: canvas.height + Math.random() * 100,
-        tx: centerX + Math.random() * 6 - 3,
-        ty: baseY - 3 * (30 + 4) - 35 + Math.random() * 6 - 3,
+        tx: centerX + (Math.random() - 0.5) * 10,
+        ty: baseY - 3 * (30 + 4) - 40 + Math.random() * 5,
         alpha: 0,
-        radius: 2,
-        color: "#ff7043",
+        radius: Math.random() * 2 + 1,
+        color: `hsl(${Math.random() * 30 + 20}, 100%, ${
+          60 + Math.random() * 20
+        }%)`,
       });
     }
 
-    // Lluvia decorativa
     const spawnRain = () => {
       for (let i = 0; i < 40; i++) {
-        particles.push({
+        particlesRef.current.push({
           x: Math.random() * canvas.width,
           y: -10,
           tx: 0,
@@ -114,15 +166,13 @@ export default function Home() {
       }
     };
 
-    // Fuegos artificiales
     const launchFirework = () => {
       const fwX = Math.random() * canvas.width;
       const fwY = Math.random() * canvas.height * 0.5;
-
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 60; i++) {
         const angle = Math.random() * 2 * Math.PI;
         const speed = Math.random() * 4 + 1;
-        particles.push({
+        particlesRef.current.push({
           x: fwX,
           y: fwY,
           tx: 0,
@@ -132,49 +182,23 @@ export default function Home() {
           color: `hsl(${Math.random() * 360}, 100%, 70%)`,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
+          isFirework: true,
         });
       }
     };
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        if (p.isRain) {
-          p.y += p.vy ?? 1;
-        } else if (p.vx !== undefined && p.vy !== undefined) {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.alpha -= 0.01;
-        } else {
-          p.x += (p.tx - p.x) * 0.05;
-          p.y += (p.ty - p.y) * 0.05;
-          p.alpha = Math.min(p.alpha + 0.02, 1);
-        }
-
-        if (p.alpha > 0) {
-          ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-      ctx.globalAlpha = 1;
-      requestAnimationFrame(animate);
-    };
-
-    animate();
-    const fireworkInterval = setInterval(launchFirework, 1800);
-    const rainInterval = setInterval(spawnRain, 1000);
+    particlesRef.current.push(...particles);
+    rainInterval.current = setInterval(spawnRain, 1000);
+    fireworkInterval.current = setInterval(launchFirework, 1800);
 
     return () => {
-      clearInterval(fireworkInterval);
-      clearInterval(rainInterval);
+      clearInterval(rainInterval.current!);
+      clearInterval(fireworkInterval.current!);
     };
-  }, [showEffects]);
+  }, [effectsOn]);
 
   return (
-    <main className="relative w-full h-screen bg-black text-white overflow-hidden font-mono flex items-center justify-center">
+    <main className="relative w-full h-screen bg-[#0a0e2a] text-white overflow-hidden font-mono flex items-center justify-center">
       <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] bg-[length:20px_20px] opacity-10 z-0" />
 
       <canvas
@@ -224,10 +248,31 @@ export default function Home() {
         </div>
       )}
 
-      {showText && (
-        <h1 className="text-[4vw] md:text-3xl text-center text-pink-300 animate-typewriter border-r-2 border-pink-300 pr-2 z-30 whitespace-nowrap max-w-full overflow-hidden mb-40">
-          {`Happy birthday! Have an amazing year. 🌟`}
-        </h1>
+      {showMessage && (
+        <>
+          <div className="flex justify-center items-center mb-20 z-30">
+            <h1 className="text-[4vw] md:text-3xl text-center text-pink-300 animate-typewriter overflow-hidden whitespace-nowrap max-w-fit">
+              {`Happy birthday! Have an amazing year. 🌟`}
+            </h1>
+            <span className="ml-1 w-[2px] h-[2.5rem] md:h-[1.5rem] bg-pink-300 animate-blink" />
+          </div>
+
+          <div className="z-30 absolute bottom-10 flex flex-col items-center">
+            <span className="text-white text-sm mb-1">OFF / ON</span>
+            <button
+              onClick={toggleEffects}
+              className={`w-16 h-8 rounded-full px-1 transition-colors duration-300 relative ${
+                effectsOn ? "bg-cyan-400" : "bg-gray-500"
+              }`}
+            >
+              <span
+                className={`w-6 h-6 bg-white rounded-full block transition-transform duration-300 ${
+                  effectsOn ? "translate-x-8" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </>
       )}
 
       <style jsx>{`
@@ -236,7 +281,7 @@ export default function Home() {
             width: 0;
           }
           to {
-            width: 100%;
+            width: 42ch;
           }
         }
 
@@ -251,15 +296,28 @@ export default function Home() {
           }
         }
 
+        @keyframes blink {
+          0%,
+          50%,
+          100% {
+            opacity: 1;
+          }
+          25%,
+          75% {
+            opacity: 0;
+          }
+        }
+
         .animate-typewriter {
-          overflow: hidden;
-          white-space: nowrap;
-          width: 0;
-          animation: typewriter 4s steps(40, end) forwards;
+          animation: typewriter 4s steps(42, end) forwards;
         }
 
         .animate-fadein {
           animation: fadein 1s ease-in-out forwards;
+        }
+
+        .animate-blink {
+          animation: blink 1.8s step-start infinite;
         }
       `}</style>
     </main>
