@@ -26,7 +26,7 @@ export default function Home() {
   const [showMessage, setShowMessage] = useState(false);
   const [effectsOn, setEffectsOn] = useState(false);
 
-  const effectsOnRef = useRef(false); // <-- refleja el estado actual de effectsOn
+  const effectsOnRef = useRef(false);
   useEffect(() => {
     effectsOnRef.current = effectsOn;
   }, [effectsOn]);
@@ -36,14 +36,13 @@ export default function Home() {
   const fireworkInterval = useRef<NodeJS.Timeout | null>(null);
   const rainInterval = useRef<NodeJS.Timeout | null>(null);
   const flameInterval = useRef<NodeJS.Timeout | null>(null);
-  const reigniteTimeoutRef = useRef<NodeJS.Timeout | null>(null); // <-- NUEVO
+  const reigniteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // AUDIO
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioFadeTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // opcional imagen
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  // --- QUITADO: imgRef y carga de imagen ---
 
   // vela: posición y estado
   const candleBoundsRef = useRef<{
@@ -74,10 +73,6 @@ export default function Home() {
 
   useEffect(() => {
     audioRef.current?.load();
-    const img = new Image();
-    img.src = "/img/perfil.jpg";
-    img.crossOrigin = "anonymous";
-    img.onload = () => (imgRef.current = img);
   }, []);
 
   const handleGiftClick = () => {
@@ -123,16 +118,15 @@ export default function Home() {
 
     // OFF
     setEffectsOn(false);
-    candleLitRef.current = false; // <-- marca vela apagada
+    candleLitRef.current = false;
     if (flameInterval.current) clearInterval(flameInterval.current);
     if (reigniteTimeoutRef.current) {
-      // <-- CANCELA reencendido pendiente
       clearTimeout(reigniteTimeoutRef.current);
       reigniteTimeoutRef.current = null;
     }
     if (fireworkInterval.current) clearInterval(fireworkInterval.current);
     if (rainInterval.current) clearInterval(rainInterval.current);
-    particlesRef.current = []; // elimina toda partícula (llama/humo incluido)
+    particlesRef.current = [];
 
     if (el) {
       fadeAudio(el, 0, 700, () => {
@@ -396,7 +390,6 @@ export default function Home() {
     candleLitRef.current = false;
 
     if (flameInterval.current) clearInterval(flameInterval.current);
-    // cancela reencendido pendiente (por si el usuario spamea clicks)
     if (reigniteTimeoutRef.current) {
       clearTimeout(reigniteTimeoutRef.current);
       reigniteTimeoutRef.current = null;
@@ -425,10 +418,9 @@ export default function Home() {
       });
     }
 
-    // Reencender después… solo si los efectos siguen activos
     reigniteTimeoutRef.current = setTimeout(() => {
       reigniteTimeoutRef.current = null;
-      if (!effectsOnRef.current) return; // <-- evita reencender si apagaste todo
+      if (!effectsOnRef.current) return;
       igniteCandle(cx, topY);
     }, 7000);
   };
@@ -634,7 +626,7 @@ export default function Home() {
         <>
           <div className="flex justify-center items-center mb-20 z-30">
             <h1 className="text-[4vw] md:text-3xl text-center text-pink-300 animate-typewriter overflow-hidden whitespace-nowrap max-w-fit">
-              {`Happy birthday! Have an amazing year, Valeria. 🌟`}
+              {`Happy birthday! Have an amazing year, Valeria. ✨`}
             </h1>
             <span className="ml-1 w-[2px] h-[2.5rem] md:h-[1.5rem] bg-pink-300 animate-blink" />
           </div>
