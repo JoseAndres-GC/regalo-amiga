@@ -42,8 +42,6 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioFadeTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // --- QUITADO: imgRef y carga de imagen ---
-
   // vela: posición y estado
   const candleBoundsRef = useRef<{
     x1: number;
@@ -570,7 +568,7 @@ export default function Home() {
   }, [effectsOn]);
 
   return (
-    <main className="relative w-full h-screen bg-[#0a0e2a] text-white overflow-hidden font-mono flex items-center justify-center">
+    <main className="relative w-full min-h-[100svh] bg-[#0a0e2a] text-white overflow-hidden font-mono flex items-center justify-center">
       <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] bg-[length:20px_20px] opacity-10 z-0" />
 
       {/* AUDIO (no visible) */}
@@ -631,20 +629,25 @@ export default function Home() {
             <span className="ml-1 w-[2px] h-[2.5rem] md:h-[1.5rem] bg-pink-300 animate-blink" />
           </div>
 
-          <div className="z-30 absolute bottom-10 flex flex-col items-center">
-            <span className="text-white text-sm mb-1">OFF / ON</span>
-            <button
-              onClick={toggleEffects}
-              className={`w-16 h-8 rounded-full px-1 transition-colors duration-300 relative ${
-                effectsOn ? "bg-cyan-400" : "bg-gray-500"
-              }`}
-            >
-              <span
-                className={`w-6 h-6 bg-white rounded-full block transition-transform duration-300 ${
-                  effectsOn ? "translate-x-8" : "translate-x-0"
+          {/* Barra fija inferior con safe-area */}
+          <div className="fixed inset-x-0 bottom-0 z-30 pointer-events-none">
+            <div className="pointer-events-auto mx-auto w-full max-w-sm flex flex-col items-center pb-[max(env(safe-area-inset-bottom),16px)] pt-2">
+              <span className="text-white text-xs mb-1 select-none">
+                OFF / ON
+              </span>
+              <button
+                onClick={toggleEffects}
+                className={`w-16 h-8 rounded-full px-1 transition-colors duration-300 relative ${
+                  effectsOn ? "bg-cyan-400" : "bg-gray-500"
                 }`}
-              />
-            </button>
+              >
+                <span
+                  className={`w-6 h-6 bg-white rounded-full block transition-transform duration-300 ${
+                    effectsOn ? "translate-x-8" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </>
       )}
